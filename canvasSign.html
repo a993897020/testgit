@@ -1,0 +1,98 @@
+<!--
+ * @Author: 关振俊
+ * @Date: 2022-05-30 14:01:23
+ * @LastEditors: 关振俊
+ * @LastEditTime: 2022-05-30 14:02:06
+ * @Description: 
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>canvas实现签名</title>
+</head>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+    }
+
+    #canvas {
+        border: 1px solid black;
+    }
+</style>
+
+<body>
+    <div>
+        <canvas id="canvas"></canvas>
+        <div>
+            <button id='clear'>清空画布</button>
+            <button id='create'>生成图片</button>
+        </div>
+        <div id="img-list"></div>
+    </div>
+</body>
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const clearBtn = document.getElementById('clear');
+    const createBtn = document.getElementById('create');
+    const imgList = document.getElementById('img-list')
+    let isWrite = false;
+    let mouseX = 0;
+    let mouseY = 0;
+    window.onload = function () {
+        console.log([imgList])
+
+        canvas.onmousedown = function (e) {
+            // console.log('down',e)
+            // console.log('canvas',[canvas])
+            isWrite = true
+            writeCanvas(e)
+        }
+        canvas.onmousemove = function (e) {
+            // console.log('move',e)
+            writeCanvas(e)
+        }
+        canvas.onmouseup = function (e) {
+            // console.log('up',e)
+            isWrite = false
+            writeCanvas(e)
+        }
+        clearBtn.onclick = function () {
+            ctx.beginPath();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        createBtn.onclick = function () {
+            const src = canvas.toDataURL();
+            // console.log(src)
+            const img = document.createElement('img');
+            img.src = src;
+            img.id = `img${imgList.childNodes.length + 1}`
+            img.addEventListener('click', delImg)
+            imgList.appendChild(img)
+        }
+    }
+    function writeCanvas(e) {
+        // console.log(isWrite)
+        if (isWrite) {
+            ctx.beginPath();//开始绘画
+            ctx.lineWidth = 2;//线条宽度
+            ctx.strokeStyle = 'red';//线条颜色
+            ctx.moveTo(mouseX, mouseY);
+            ctx.lineTo(e.offsetX, e.offsetY);
+            ctx.stroke();
+        }
+        mouseX = e.offsetX;
+        mouseY = e.offsetY;
+    }
+    function delImg(e) {
+        const id = e.target.id
+        imgList.removeChild(document.getElementById(id))
+    }
+</script>
+
+</html>
