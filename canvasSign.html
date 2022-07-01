@@ -2,7 +2,7 @@
  * @Author: 关振俊
  * @Date: 2022-05-30 14:01:23
  * @LastEditors: 关振俊
- * @LastEditTime: 2022-05-30 14:02:06
+ * @LastEditTime: 2022-06-30 15:05:49
  * @Description: 
 -->
 <!DOCTYPE html>
@@ -11,50 +11,100 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>canvas实现签名</title>
 </head>
 <style>
     * {
         margin: 0;
         padding: 0;
+        touch-action: none;
     }
 
     #canvas {
         border: 1px solid black;
     }
+
+    .draw-canvas-wrap {
+        padding: 10px;
+        box-sizing: border-box;
+    }
+
+    #canvas-wrap {
+        width: 100%;
+    }
+
+    .btn-wrap {
+        margin-top: 20px;
+    }
 </style>
 
 <body>
-    <div>
-        <canvas id="canvas"></canvas>
-        <div>
+    <div id="drawBox" class="draw-canvas-wrap">
+        <div id="canvas-wrap">
+            <canvas id="canvas"></canvas>
+            <div id="img-list"></div>
+        </div>
+        <div class="btn-wrap">
             <button id='clear'>清空画布</button>
             <button id='create'>生成图片</button>
+            <button id='rotate'>旋转90°</button>
         </div>
-        <div id="img-list"></div>
     </div>
 </body>
 <script>
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const clearBtn = document.getElementById('clear');
-    const createBtn = document.getElementById('create');
-    const imgList = document.getElementById('img-list')
-    let isWrite = false;
-    let mouseX = 0;
-    let mouseY = 0;
     window.onload = function () {
-        console.log([imgList])
-
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const clearBtn = document.getElementById('clear');
+        const createBtn = document.getElementById('create');
+        const rotateBtn = document.getElementById('rotate');
+        const imgList = document.getElementById('img-list');
+        const canvasWrap = document.getElementById('canvas-wrap');
+        const drawBox = document.getElementById('drawBox');
+        var isWrite = false;
+        var mouseX = 0;
+        var mouseY = 0;
+        const canvasWidth = window.innerWidth - 20;
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+        const canvasHeight = 200
+        var rotateReg = 0;
+        // console.log([imgList])
+        // console.log(canvas)
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        // canvas.width = 100;
+        //   canvas.height = 200;
+        // canvas.style.transition = "all .2s"
+        canvas.ontouchstart = function (e) {
+            // console.log('down', e)
+            e.preventDefault();
+            // console.log('canvas',[canvas])
+            isWrite = true
+            writeCanvas(e)
+        }
         canvas.onmousedown = function (e) {
             // console.log('down',e)
             // console.log('canvas',[canvas])
             isWrite = true
             writeCanvas(e)
         }
+
+        canvas.ontouchmove = function (e) {
+            e.preventDefault();
+            // console.log('move',e)
+            writeCanvas(e)
+        }
         canvas.onmousemove = function (e) {
             // console.log('move',e)
+            writeCanvas(e)
+        }
+
+        canvas.ontouchend = function (e) {
+            e.preventDefault();
+            // console.log('up', e)
+            isWrite = false
             writeCanvas(e)
         }
         canvas.onmouseup = function (e) {
@@ -75,24 +125,87 @@
             img.addEventListener('click', delImg)
             imgList.appendChild(img)
         }
-    }
-    function writeCanvas(e) {
-        // console.log(isWrite)
-        if (isWrite) {
-            ctx.beginPath();//开始绘画
-            ctx.lineWidth = 2;//线条宽度
-            ctx.strokeStyle = 'red';//线条颜色
-            ctx.moveTo(mouseX, mouseY);
-            ctx.lineTo(e.offsetX, e.offsetY);
-            ctx.stroke();
+        rotateBtn.onclick = function () {
+            try {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                let canvasStyle = '';
+                let style = '';
+                rotateReg === 90 ? rotateReg = 0 : rotateReg = 90;
+                console.log(rotateReg);
+                const reg = rotateReg.toString() + 'deg'
+                // console.log(reg)
+                // canvas.width = rotateReg % 90 == 0 ? height - 20 : canvasWidth - 20
+                // canvas.height = 200
+                // drawBox.style.transform = "rotate(" + reg + ")";
+                // drawBox.style.transformOrigin = (canvasWidth / 2) + "px " + (canvasWidth / 2) + "px";
+                // drawBox.style.width = width;
+                // drawBox.style.height = height;
+
+                style += "width:" + (rotateReg ? height : width) + "px;";
+                style += "height:" + (rotateReg ? width : height) + "px;";
+                style += `-webkit-transform: rotate(${reg}); transform: rotate(${reg});`;
+                // 注意旋转中点的处理
+                style += "-webkit-transform-origin: " + width / 2 + "px " + width / 2 + "px;";
+                style += "transform-origin: " + width / 2 + "px " + width / 2 + "px;";
+
+                //将签名还原翻转，就可以保证在横屏情况下保证画笔的方向跟手势一致，然后再进行高度和宽度的调整。
+                let pw = canvasWrap.clientWidth;
+                let ph = canvasWrap.clientHeight;
+                canvasWrap.style.cssText = 'height: ' + ph + 'px;';
+                canvas.height = rotateReg ? height - 20 : ph;
+                canvas.width = rotateReg ? ph : width - 20;
+                if (rotateReg) {
+                    canvasStyle += `-webkit-transform: rotate(-90deg); transform: rotate(-90deg);`;
+                    canvasStyle += '-webkit-transform-origin: ' + ph / 2 + 'px ' + ph / 2 + 'px;';
+                    canvasStyle += 'transform-origin: ' + ph / 2 + 'px ' + ph / 2 + 'px;';
+                }
+                canvas.style.cssText = canvasStyle;
+                console.log(style)
+                console.log(canvasStyle)
+                drawBox.style.cssText = style;
+            } catch (e) {
+                console.log(e)
+            }
         }
-        mouseX = e.offsetX;
-        mouseY = e.offsetY;
+        function writeCanvas(e, type) {
+            // console.log(e)
+            if (!e) return
+            // console.log(canvas.offsetLeft)
+            // console.log(canvas.offsetTop)
+            // console.log(mouseX, mouseY)
+            // console.log(isWrite)
+            if (isWrite && e.type.includes('mouse')) {
+                ctx.beginPath();//开始绘画
+                ctx.lineWidth = 2;//线条宽度
+                ctx.strokeStyle = 'red';//线条颜色
+                ctx.moveTo(mouseX, mouseY);
+                ctx.lineTo(e.offsetX, e.offsetY);
+                ctx.stroke();
+            }
+            if (isWrite && e.type.includes('touch')) {
+                if (e.type === 'touchstart') {
+                    ctx.beginPath();//开始绘画
+                    ctx.lineWidth = 2;//线条宽度
+                    ctx.strokeStyle = 'red';//线条颜色
+                    ctx.moveTo(e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop);
+                } if (e.type === 'touchmove') {
+                    ctx.lineTo(e.touches[0].pageX - canvas.offsetLeft, e.touches[0].pageY - canvas.offsetTop);
+                    ctx.stroke();
+                }
+                if (e.type === 'touchend') {
+                    ctx.closePath();
+                }
+            }
+            mouseX = e.type.includes('touch') ? e.touches[0].pageX - canvas.offsetLeft : e.offsetX;
+            mouseY = e.type.includes('touch') ? e.touches[0].pageY - canvas.offsetTop : e.offsetY;
+        }
+        function delImg(e) {
+            const id = e.target.id
+            imgList.removeChild(document.getElementById(id))
+        }
     }
-    function delImg(e) {
-        const id = e.target.id
-        imgList.removeChild(document.getElementById(id))
-    }
+
 </script>
 
 </html>
