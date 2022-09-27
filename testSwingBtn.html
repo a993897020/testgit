@@ -1,0 +1,111 @@
+<!--
+ * @Author: 关振俊
+ * @Date: 2022-09-21 17:08:10
+ * @LastEditors: 关振俊
+ * @LastEditTime: 2022-09-22 10:13:12
+ * @Description: 
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        .btn-wrap {
+            background-color: #edf1f4;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 500px;
+        }
+
+        .btn-wrap .btn-list {
+            width: 450px;
+            height: 100px;
+            display: flex;
+            justify-content: space-between;
+            background-color: #e2e6eb;
+            border-radius: 10px;
+            position: relative;
+            transition: transform 0.4s cubic-bezier(0, 0, 0.48, 1);
+        }
+
+        .btn-list .btn {
+            float: left;
+            text-align: center;
+            line-height: 100px;
+            width: 50%;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .btn-list .active {
+            color: #111;
+        }
+
+        .btn-list::before {
+            content: '';
+            position: absolute;
+            left: var(--sliderLeft);
+            top: 20px;
+            width: calc(50% - 40px);
+            height: calc(100% - 40px);
+            border-radius: 6px;
+            box-shadow: inset 7px 7px 6px #d9dce6, inset -5px -5px 15px #f4f8fc, inset -5px -5px 15px #f4f8fc, inset 8px 8px 6px #d9dce6;
+            transition: cubic-bezier(0.88, 0.84, 0.17, 1) 1s left;
+            /* animation: bgGoback 2s;
+            animation-iteration-count: infinite; */
+        }
+
+        /* @keyframes bgGoback {
+            0% {
+                left: 20px;
+            }
+
+            50% {
+                left: calc(50% + 20px);
+            }
+
+            100% {
+                left: 20px;
+            }
+        } */
+    </style>
+</head>
+
+<body>
+    <div class="btn-wrap">
+        <div class="btn-list">
+            <div class="btn active">开灯</div>
+            <div class="btn">关灯</div>
+        </div>
+    </div>
+    <script>
+        const btnList = document.querySelector('.btn-list')
+        const btns = document.querySelectorAll('.btn')
+        console.log(btnList)
+        btnList.style.setProperty('--sliderLeft', `20px`)
+        btns.forEach((p, i) => {
+            p.addEventListener('click', function () {
+                resetBtnClass()
+                p.className = 'btn active'
+                btnList.style.setProperty('--sliderLeft', `calc(20px + ${50 * i}%)`)
+                btnList.style.transformOrigin = i === 0 ? `80% top` : '20% top'
+                btnList.style.transform = `rotateY(${i === 0 ? '-10' : '10'}deg)`
+                setTimeout(() => {
+                    btnList.style.transform = `rotateY(0deg)`
+                }, 500)
+            })
+        })
+        function resetBtnClass() {
+            btns.forEach(o => o.className = 'btn')
+        }
+    </script>
+</body>
+
+</html>
