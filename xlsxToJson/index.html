@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>上传文件</title>
+  <script type="text/javascript" src='./xlsx.full.min.js'></script>
+</head>
+
+<body>
+  xlsx文件：<br>
+  <input type="file" id="file"><br>
+  json文件：<br>
+  <input type="file" id="jsonFile"><br>
+  是否需要下载：
+  <label for="yes">是</label>
+  <input id="yes" value="1" checked type="radio" name="isDownload">
+  <label for="no">否</label>
+  <input id="no" value="0" type="radio" name="isDownload">
+</body>
+<script>
+  let translateFileList = []
+  const submit = document.querySelector('#submit')
+  const radioGroup = document.getElementsByName('isDownload')
+  console.log({ radioGroup });
+  //首先监听input框的变动，选中一个新的文件会触发change事件
+  document.querySelector("#file").addEventListener("change", function () {
+    //获取到选中的文件
+    var file = document.querySelector("#file").files[0];
+    var type = file.name.split('.');
+    if (type[type.length - 1] !== 'xlsx' && type[type.length - 1] !== 'xls') {
+      alert('只能选择excel文件导入');
+      return false;
+    }
+    const reader = new FileReader();
+    reader.readAsBinaryString(file);
+    reader.onload = (e) => {
+      const data = e.target.result;
+      const zzexcel = window.XLS.read(data, {
+        type: 'binary'
+      });
+      for (let i = 0; i < zzexcel.SheetNames.length; i++) {
+        const newData = window.XLS.utils.sheet_to_json(zzexcel.Sheets[zzexcel.SheetNames[i]]);
+        translateFileList.push(...newData)
+      }
+      console.log({ translateFileList })
+      try {
+        console.log(translateFileList.filter(p => !p.a))
+        const isChinese = /^([\u4E00-\u9FA5])*$/
+        //中译排序，中单译双，判断双是否含有中文，做一个兼容处理
+        const idx = translateFileList.findIndex((p, pi) => (pi + 1) % 2 === 0 && isChinese.test(p.a))
+        // if (idx === -1) {
+        translateFileList = translateFileList.map((p, pi, list) => ((pi + 1) % 2 !== 0 && { value: p.a, translateValue: list[pi + 1].a })).filter((p, pi) => (pi + 1) % 2 !== 0)
+        // } else {
+        //   // 如果有中文，递归排除双的中文，判断数据是否符合要求
+        //   console.log(`第${idx}位出现异常中文：${translateFileList[idx].a}`, translateFileList)
+        //   translateFileList = filterExcptions(translateFileList, idx)
+        //   // 获取单位数中文数据创建一个中译文的数组对象
+        //   translateFileList = translateFileList.map((p, pi, list) => ((pi + 1) % 2 !== 0 && { value: p.a, translateValue: list[pi + 1].a })).filter((p, pi) => (pi + 1) % 2 !== 0)
+        //   console.log({ translateFileList })
+        // }
+
+      } catch (e) {
+        console.log(e)
+      }
+    }
+  });
+  // 排除异常中文
+  const filterExcptions = (arr, targetIdx) => {
+    const newArr = arr.filter((p, pi) => pi !== targetIdx)
+    const isChinese = /^([\u4E00-\u9FA5])*$/
+    const idx = newArr.findIndex((p, pi) => (pi + 1) % 2 === 0 && isChinese.test(p.a))
+    if (idx === -1) {
+      return newArr
+    } else {
+      console.log(`第${idx}位出现异常中文：${newArr[idx].a}`, newArr)
+      return filterExcptions(newArr, idx)
+    }
+  }
+  document.querySelector('#jsonFile').addEventListener('change', function () {
+    const file = document.querySelector('#jsonFile').files[0]
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const json = JSON.parse(e.target.result)
+      const jsonArr = Object.entries(json)
+      jsonArr.map((p, pi) => {
+        const [key, value] = p
+        const matchResult = translateFileList.find(p => p.value === value)
+        if (matchResult) {
+          p[1] = matchResult.translateValue
+        }
+      })
+      const result = Object.fromEntries(jsonArr)
+      const selectRadio = Array.from(radioGroup).find(p => p.checked)
+      if (Number(selectRadio.value)) {
+        downloadJSON(result, file)
+      }
+
+      console.log({ json, jsonArr, result, radioGroup })
+    }
+    reader.readAsText(file)
+  })
+  function downloadJSON(result, file) {
+    // 通过JSON字符串创建blob
+    const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'applicant/json' })
+    // 通过blob转换成一个URL
+    const src = window.URL.createObjectURL(blob)
+    // 从而通过a标签进行下载该json文件
+    const a = document.createElement('a')
+    a.href = src
+    a.download = file.name
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(src)
+  }
+</script>
+
+</html>
